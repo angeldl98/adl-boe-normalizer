@@ -28,20 +28,24 @@ export async function upsertNormalized(rec: NormalizedRecord): Promise<void> {
   const client = await getClient();
   await client.query(
     `
-      INSERT INTO boe_subastas (raw_id, boe_uid, titulo, estado, fecha_publicacion, fecha_conclusion, organismo, provincia, municipio, direccion, importe_base, url_detalle, created_at, updated_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12, now(), now())
+      INSERT INTO boe_subastas (raw_id, boe_uid, titulo, estado, fecha_publicacion, fecha_conclusion, expediente, organismo, provincia, municipio, direccion, importe_base, importe_subasta, tipo_subasta, estado_normalizado, url_detalle, created_at, updated_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16, now(), now())
       ON CONFLICT (raw_id) DO UPDATE SET
-        boe_uid = EXCLUDED.boe_uid,
-        titulo = EXCLUDED.titulo,
-        estado = EXCLUDED.estado,
-        fecha_publicacion = EXCLUDED.fecha_publicacion,
-        fecha_conclusion = EXCLUDED.fecha_conclusion,
-        organismo = EXCLUDED.organismo,
-        provincia = EXCLUDED.provincia,
-        municipio = EXCLUDED.municipio,
-        direccion = EXCLUDED.direccion,
-        importe_base = EXCLUDED.importe_base,
-        url_detalle = EXCLUDED.url_detalle,
+        boe_uid = COALESCE(EXCLUDED.boe_uid, boe_subastas.boe_uid),
+        titulo = COALESCE(EXCLUDED.titulo, boe_subastas.titulo),
+        estado = COALESCE(EXCLUDED.estado, boe_subastas.estado),
+        fecha_publicacion = COALESCE(EXCLUDED.fecha_publicacion, boe_subastas.fecha_publicacion),
+        fecha_conclusion = COALESCE(EXCLUDED.fecha_conclusion, boe_subastas.fecha_conclusion),
+        expediente = COALESCE(EXCLUDED.expediente, boe_subastas.expediente),
+        organismo = COALESCE(EXCLUDED.organismo, boe_subastas.organismo),
+        provincia = COALESCE(EXCLUDED.provincia, boe_subastas.provincia),
+        municipio = COALESCE(EXCLUDED.municipio, boe_subastas.municipio),
+        direccion = COALESCE(EXCLUDED.direccion, boe_subastas.direccion),
+        importe_base = COALESCE(EXCLUDED.importe_base, boe_subastas.importe_base),
+        importe_subasta = COALESCE(EXCLUDED.importe_subasta, boe_subastas.importe_subasta),
+        tipo_subasta = COALESCE(EXCLUDED.tipo_subasta, boe_subastas.tipo_subasta),
+        estado_normalizado = COALESCE(EXCLUDED.estado_normalizado, boe_subastas.estado_normalizado),
+        url_detalle = COALESCE(EXCLUDED.url_detalle, boe_subastas.url_detalle),
         updated_at = now()
     `,
     [
@@ -51,11 +55,15 @@ export async function upsertNormalized(rec: NormalizedRecord): Promise<void> {
       rec.estado,
       rec.fecha_publicacion,
       rec.fecha_conclusion,
+      rec.expediente,
       rec.organismo,
       rec.provincia,
       rec.municipio,
       rec.direccion,
       rec.importe_base,
+      rec.importe_subasta,
+      rec.tipo_subasta,
+      rec.estado_normalizado,
       rec.url_detalle
     ]
   );

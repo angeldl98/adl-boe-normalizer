@@ -14,11 +14,15 @@ export type NormalizedRecord = {
   estado: string | null;
   fecha_publicacion: string | null;
   fecha_conclusion: string | null;
+  expediente: string | null;
   organismo: string | null;
   provincia: string | null;
   municipio: string | null;
   direccion: string | null;
   importe_base: string | null;
+  importe_subasta: string | null;
+  tipo_subasta: string | null;
+  estado_normalizado: EstadoNormalizado | null;
   url_detalle: string | null;
 };
 
@@ -30,5 +34,13 @@ export type NormalizationRun = {
   processed: number;
   errors: number;
 };
+
+export enum EstadoNormalizado {
+  ACTIVE = "ACTIVE",
+  UPCOMING = "UPCOMING",
+  CLOSED = "CLOSED",
+  CANCELLED = "CANCELLED",
+  UNKNOWN = "UNKNOWN"
+}
 
 
