@@ -1,14 +1,16 @@
 import { getClient } from "./db";
 import type { RawRecord } from "./types";
 
-export async function loadRawPending(limit = 100): Promise<RawRecord[]> {
+export async function loadRawPending(limit = 20): Promise<RawRecord[]> {
   const client = await getClient();
   const res = await client.query<RawRecord>(
     `
-      SELECT id, fuente, fetched_at, url, payload_raw, checksum
-      FROM boe_subastas_raw
-      WHERE id NOT IN (SELECT raw_id FROM boe_subastas)
-      ORDER BY id ASC
+      SELECT r.id, r.fuente, r.fetched_at, r.url, r.payload_raw, r.checksum
+      FROM boe_subastas_raw r
+      WHERE NOT EXISTS (
+        SELECT 1 FROM boe_subastas s WHERE s.raw_id = r.id
+      )
+      ORDER BY r.id ASC
       LIMIT $1
     `,
     [limit]
