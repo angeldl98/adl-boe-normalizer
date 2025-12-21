@@ -1,49 +1,77 @@
 import "dotenv/config";
+import fs from "fs";
 import { Client } from "pg";
 import type { ClientConfig } from "pg";
 
 let client: Client | null = null;
+
+const LOCAL_PW_PATH = "/opt/adl-suite/data/secrets/postgres.password";
 
 function fail(message: string): never {
   console.error(message);
   process.exit(1);
 }
 
-function requirePassword(pass: string | undefined, source: "DATABASE_URL" | "PGPASSWORD"): string {
-  if (typeof pass !== "string" || pass.trim() === "") {
-    fail(`Postgres password is missing or invalid. Check ${source}.`);
+function readLocalPassword(): string | null {
+  try {
+    if (fs.existsSync(LOCAL_PW_PATH)) {
+      return fs.readFileSync(LOCAL_PW_PATH, "utf8").trim();
+    }
+  } catch (err: any) {
+    console.error("Unable to read local Postgres password file", { error: err?.message });
   }
-  return pass;
+  return null;
+}
+
+function validateUrl(urlEnv: string): URL {
+  try {
+    return new URL(urlEnv);
+  } catch (err: any) {
+    fail(`Invalid DATABASE_URL: ${err?.message || "parse_error"}`);
+  }
 }
 
 function buildConfig(): ClientConfig {
-  const urlEnv = process.env.DATABASE_URL;
-  if (urlEnv) {
-    let parsed: URL;
-    try {
-      parsed = new URL(urlEnv);
-    } catch (err: any) {
-      fail(`Invalid DATABASE_URL: ${err?.message || "parse_error"}`);
+  let urlValue = process.env.DATABASE_URL?.trim();
+
+  if (!urlValue || urlValue === "") {
+    if (!process.env.DOCKER_ENV) {
+      const pw = readLocalPassword();
+      if (!pw) {
+        fail("DATABASE_URL is missing and local password file could not be read. Provide .env or /opt/adl-suite/data/secrets/postgres.password.");
+      }
+      urlValue = `postgresql://adl:${encodeURIComponent(pw)}@127.0.0.1:5432/adl_core`;
+      console.warn("DATABASE_URL not set; using local fallback to 127.0.0.1:5432/adl_core");
+    } else {
+      fail("DATABASE_URL is missing. Provide .env with a valid connection string.");
     }
-    const password = requirePassword(parsed.password ? decodeURIComponent(parsed.password) : "", "DATABASE_URL");
-    const user = parsed.username ? decodeURIComponent(parsed.username) : undefined;
-    const database = parsed.pathname?.startsWith("/") ? parsed.pathname.slice(1) : parsed.pathname;
-    const port = parsed.port ? Number(parsed.port) : 5432;
-    let host = parsed.hostname;
-    if (["postgres", "db", "base"].includes(host) && !process.env.DOCKER_ENV) {
-      console.warn(`Postgres host "${host}" not resolvable locally, falling back to localhost`);
-      host = "localhost";
-    }
-    return { host, port, user, password, database };
   }
 
-  const password = requirePassword(process.env.PGPASSWORD, "PGPASSWORD");
+  const parsed = validateUrl(urlValue);
+  const user = parsed.username ? decodeURIComponent(parsed.username) : null;
+  const password = parsed.password ? decodeURIComponent(parsed.password) : null;
+  const host = parsed.hostname || null;
+  const port = parsed.port ? Number(parsed.port) : NaN;
+  const database = parsed.pathname?.startsWith("/") ? parsed.pathname.slice(1) : parsed.pathname;
+
+  if (!user) fail("DATABASE_URL missing username.");
+  if (!password) fail("DATABASE_URL missing password.");
+  if (!host) fail("DATABASE_URL missing host.");
+  if (!database) fail("DATABASE_URL missing database name.");
+  if (!Number.isFinite(port) || port <= 0) fail("DATABASE_URL missing or invalid port.");
+
+  let resolvedHost = host;
+  if (["postgres", "db", "base"].includes(resolvedHost) && !process.env.DOCKER_ENV) {
+    console.warn(`Postgres host "${resolvedHost}" not resolvable locally, falling back to localhost`);
+    resolvedHost = "localhost";
+  }
+
   return {
-    host: process.env.PGHOST,
-    port: process.env.PGPORT ? Number(process.env.PGPORT) : undefined,
-    user: process.env.PGUSER,
+    host: resolvedHost,
+    port,
+    user,
     password,
-    database: process.env.PGDATABASE
+    database
   };
 }
 
