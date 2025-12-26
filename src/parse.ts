@@ -39,10 +39,10 @@ function normalizeAmount(val: string | null): string | null {
 
 function extractAmountWithLabels(html: string): string | null {
   return (
-    extractRegex(html, /Valor\s+subasta[^0-9]*([\d\.\,]+)/i) ||
-    extractRegex(html, /Importe\s+Subasta[^0-9]*([\d\.\,]+)/i) ||
-    extractRegex(html, /Importe\s+Base[^0-9]*([\d\.\,]+)/i) ||
-    extractRegex(html, /Tipo\s+de\s+subasta[^<\n\r]*?([\d\.\,]+)\s*€/i)
+    extractRegex(html, /Valor\s+subasta[\s\S]{0,120}?([\d\.\,]+)/i) ||
+    extractRegex(html, /Importe\s+Subasta[\s\S]{0,120}?([\d\.\,]+)/i) ||
+    extractRegex(html, /Importe\s+Base[\s\S]{0,120}?([\d\.\,]+)/i) ||
+    extractRegex(html, /Tipo\s+de\s+subasta[\s\S]{0,120}?([\d\.\,]+)/i)
   );
 }
 
