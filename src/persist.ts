@@ -26,10 +26,10 @@ export async function recordRunEnd(runId: string, status: "ok" | "error", finish
 
 export async function upsertNormalized(rec: NormalizedRecord): Promise<void> {
   const client = await getClient();
+  await client.query("CREATE UNIQUE INDEX IF NOT EXISTS boe_subastas_checksum_uidx ON boe_subastas(checksum)");
+
   await client.query(
     `
-      CREATE UNIQUE INDEX IF NOT EXISTS boe_subastas_checksum_uidx ON boe_subastas(checksum);
-
       INSERT INTO boe_subastas (
         url,
         identificador,
