@@ -37,6 +37,15 @@ function normalizeAmount(val: string | null): string | null {
   return cleaned.trim() ? cleaned.trim() : null;
 }
 
+function extractAmountWithLabels(html: string): string | null {
+  return (
+    extractRegex(html, /Valor\s+subasta[^0-9]*([\d\.\,]+)/i) ||
+    extractRegex(html, /Importe\s+Subasta[^0-9]*([\d\.\,]+)/i) ||
+    extractRegex(html, /Importe\s+Base[^0-9]*([\d\.\,]+)/i) ||
+    extractRegex(html, /Tipo\s+de\s+subasta[^<\n\r]*?([\d\.\,]+)\s*€/i)
+  );
+}
+
 function extractIsoDate(label: "inicio" | "conclusion", html: string): string | null {
   const regex =
     label === "inicio"
@@ -71,12 +80,7 @@ export function parseRawToNormalized(raw: RawRecord): NormalizedRecord {
   const canonicalUrl = deriveCanonicalUrl(raw.url, html) || raw.url || "";
   const boeUid = deriveBoeUid(canonicalUrl, html) || `RAW-${raw.id}`;
   const estado = extractRegex(html, /Estado:\s*([^<\[\n\r]+)/i);
-  const valorSubasta = normalizeAmount(
-    extractRegex(html, /Importe\s+Subasta:\s*([\d\.\,]+)/i) ||
-      extractRegex(html, /Importe\s+Base:\s*([\d\.\,]+)/i) ||
-      extractRegex(html, /Tipo\s+de\s+subasta[^<\n\r]*?([\d\.\,]+)\s*€/i) ||
-      extractRegex(html, /Valor\s+subasta:\s*([\d\.\,]+)/i)
-  );
+  const valorSubasta = normalizeAmount(extractAmountWithLabels(html));
   const tipoSubasta = extractRegex(html, /Tipo\s+de\s+subasta:\s*([^<\n\r]+)/i) || "desconocido";
   const organismo = extractRegex(html, /(Órgano\s+Gestor|Organo\s+Gestor):\s*([^<\n\r]+)/i) || extractRegex(html, /Organismo:\s*([^<\n\r]+)/i);
   const provincia = extractRegex(html, /Provincia:\s*([^<\n\r]+)/i);
