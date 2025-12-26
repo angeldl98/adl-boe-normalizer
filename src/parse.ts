@@ -76,7 +76,7 @@ function normalizeEstado(estado: string | null): EstadoNormalizado | null {
 }
 
 export function parseRawToNormalized(raw: RawRecord): NormalizedRecord {
-  const html = raw.payload_raw || "";
+  const html = (raw.payload_raw || "").replace(/&nbsp;/g, " ");
   const canonicalUrl = deriveCanonicalUrl(raw.url, html) || raw.url || "";
   const boeUid = deriveBoeUid(canonicalUrl, html) || `RAW-${raw.id}`;
   const estado = extractRegex(html, /Estado:\s*([^<\[\n\r]+)/i);
