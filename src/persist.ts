@@ -54,7 +54,7 @@ export async function upsertNormalized(rec: NormalizedRecord): Promise<void> {
         checksum,
         normalized_at
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14, now())
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15, now())
       ON CONFLICT (identificador) DO UPDATE SET
         url = EXCLUDED.url,
         tipo_subasta = EXCLUDED.tipo_subasta,
