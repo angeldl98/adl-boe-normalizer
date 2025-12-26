@@ -27,6 +27,7 @@ async function main() {
 
   try {
     const raws = await loadRawPending(20);
+    console.log(`normalizer load_raw_pending count=${raws.length}`);
     for (const raw of raws) {
       const normalized = parseRawToNormalized(raw);
       await upsertNormalized(normalized);
