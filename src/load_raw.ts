@@ -10,7 +10,7 @@ export async function loadRawPending(limit = 20): Promise<RawRecord[]> {
       WHERE NOT EXISTS (
         SELECT 1 FROM boe_subastas s WHERE s.checksum = r.checksum
       )
-      ORDER BY r.id DESC
+      ORDER BY r.id ASC
       LIMIT $1
     `,
     [limit]
