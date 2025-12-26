@@ -37,6 +37,14 @@ function normalizeAmount(val: string | null): string | null {
   return cleaned.trim() ? cleaned.trim() : null;
 }
 
+function extractIsoDate(label: "inicio" | "conclusion", html: string): string | null {
+  const regex =
+    label === "inicio"
+      ? /Fecha\s+de\s+inicio[^()]*\(ISO:\s*([^)]+)\)/i
+      : /Fecha\s+de\s+(?:conclus[ií]on|conclusi[oó]n)[^()]*\(ISO:\s*([^)]+)\)/i;
+  return extractRegex(html, regex);
+}
+
 function normalizeEstado(estado: string | null): EstadoNormalizado | null {
   if (!estado) return null;
   const low = estado.toLowerCase();
@@ -61,6 +69,8 @@ export function parseRawToNormalized(raw: RawRecord): NormalizedRecord {
   const organismo = extractRegex(html, /(Órgano\s+Gestor|Organo\s+Gestor):\s*([^<\n\r]+)/i) || extractRegex(html, /Organismo:\s*([^<\n\r]+)/i);
   const provincia = extractRegex(html, /Provincia:\s*([^<\n\r]+)/i);
   const municipio = extractRegex(html, /Municipio:\s*([^<\n\r]+)/i);
+  const fechaInicioIso = extractIsoDate("inicio", html);
+  const fechaFinIso = extractIsoDate("conclusion", html);
 
   return {
     url: canonicalUrl,
@@ -68,7 +78,10 @@ export function parseRawToNormalized(raw: RawRecord): NormalizedRecord {
     tipo_subasta: tipoSubasta,
     estado,
     estado_detalle: null,
+    fecha_inicio: fechaInicioIso,
+    fecha_fin: fechaFinIso,
     valor_subasta: valorSubasta,
+    precio_salida: valorSubasta,
     tasacion: null,
     importe_deposito: null,
     organismo,

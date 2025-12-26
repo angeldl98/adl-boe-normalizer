@@ -13,7 +13,10 @@ export type NormalizedRecord = {
   tipo_subasta: string;
   estado: string | null;
   estado_detalle: string | null;
+  fecha_inicio: string | null;
+  fecha_fin: string | null;
   valor_subasta: string | null;
+  precio_salida: string | null;
   tasacion: string | null;
   importe_deposito: string | null;
   organismo: string | null;
