@@ -20,6 +20,8 @@ export async function loadRawPending(limit = 20): Promise<RawRecord[]> {
       SELECT id, fuente, fetched_at, url, payload_raw, checksum
       FROM pending p
       WHERE p.ident_guess IS NOT NULL
+        AND p.payload_raw ~* 'Fecha\\s+de\\s+(inicio|conclusi[óo]n)'
+        AND p.payload_raw ~* '(Importe\\s+Subasta|Importe\\s+Base|Valor\\s+subasta)'
         AND NOT EXISTS (
           SELECT 1 FROM boe_subastas s WHERE s.identificador = p.ident_guess
         )

@@ -30,6 +30,12 @@ async function main() {
     console.log(`normalizer load_raw_pending count=${raws.length}`);
     for (const raw of raws) {
       const normalized = parseRawToNormalized(raw);
+      if (!normalized.fecha_inicio || !normalized.fecha_fin || !normalized.valor_subasta) {
+        console.log(
+          `normalizer skip_missing_fields ident=${normalized.identificador} fecha_inicio=${normalized.fecha_inicio} fecha_fin=${normalized.fecha_fin} valor_subasta=${normalized.valor_subasta}`
+        );
+        continue;
+      }
       await upsertNormalized(normalized);
       processed += 1;
     }
