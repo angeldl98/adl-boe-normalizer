@@ -49,42 +49,31 @@ function normalizeEstado(estado: string | null): EstadoNormalizado | null {
 
 export function parseRawToNormalized(raw: RawRecord): NormalizedRecord {
   const html = raw.payload_raw || "";
-  const canonicalUrl = deriveCanonicalUrl(raw.url, html);
-  const boeUid = deriveBoeUid(canonicalUrl, html);
-  const titulo = extractRegex(html, /<title>([^<]+)<\/title>/i) || extractRegex(html, /<h1[^>]*>([^<]+)<\/h1>/i);
+  const canonicalUrl = deriveCanonicalUrl(raw.url, html) || raw.url || "";
+  const boeUid = deriveBoeUid(canonicalUrl, html) || `RAW-${raw.id}`;
   const estado = extractRegex(html, /Estado:\s*([^<\[\n\r]+)/i);
-  const fechaPublicacion =
-    extractRegex(html, /Publicaci[oó]n:\s*([0-9]{2}\/[0-9]{2}\/[0-9]{4})/i) ||
-    extractRegex(html, /Fecha\s+de\s+publicaci[oó]n[^0-9]*([0-9]{2}\/[0-9]{2}\/[0-9]{4})/i);
-  const fechaConclusion = extractRegex(html, /Conclusi[oó]n\s+prevista:\s*([0-9]{2}\/[0-9]{2}\/[0-9]{4})/i);
-  const expediente = extractRegex(html, /Expediente:\s*([^<\n\r]+)/i);
+  const valorSubasta = normalizeAmount(
+    extractRegex(html, /Importe\s+Subasta:\s*([\d\.\,]+)/i) ||
+      extractRegex(html, /Importe\s+Base:\s*([\d\.\,]+)/i) ||
+      extractRegex(html, /Tipo\s+de\s+subasta[^<\n\r]*?([\d\.\,]+)\s*€/i)
+  );
+  const tipoSubasta = extractRegex(html, /Tipo\s+de\s+subasta:\s*([^<\n\r]+)/i) || "desconocido";
   const organismo = extractRegex(html, /(Órgano\s+Gestor|Organo\s+Gestor):\s*([^<\n\r]+)/i) || extractRegex(html, /Organismo:\s*([^<\n\r]+)/i);
   const provincia = extractRegex(html, /Provincia:\s*([^<\n\r]+)/i);
   const municipio = extractRegex(html, /Municipio:\s*([^<\n\r]+)/i);
-  const direccion = extractRegex(html, /Direcci[oó]n:\s*([^<\n\r]+)/i);
-  const importeBase = normalizeAmount(
-    extractRegex(html, /Importe\s+Base:\s*([\d\.\,]+)/i) || extractRegex(html, /Tipo\s+de\s+subasta[^<\n\r]*?([\d\.\,]+)\s*€/i)
-  );
-  const importeSubasta = normalizeAmount(extractRegex(html, /Importe\s+Subasta:\s*([\d\.\,]+)/i));
-  const tipoSubasta = extractRegex(html, /Tipo\s+de\s+subasta:\s*([^<\n\r]+)/i);
-  const estadoNormalizado = normalizeEstado(estado);
 
   return {
-    raw_id: raw.id,
-    boe_uid: boeUid,
-    titulo,
+    url: canonicalUrl,
+    identificador: boeUid,
+    tipo_subasta: tipoSubasta,
     estado,
-    fecha_publicacion: fechaPublicacion,
-    fecha_conclusion: fechaConclusion,
-    expediente,
+    estado_detalle: null,
+    valor_subasta: valorSubasta,
+    tasacion: null,
+    importe_deposito: null,
     organismo,
     provincia,
     municipio,
-    direccion,
-    importe_base: importeBase,
-    importe_subasta: importeSubasta,
-    tipo_subasta: tipoSubasta,
-    estado_normalizado: estadoNormalizado,
-    url_detalle: canonicalUrl
+    checksum: raw.checksum || ""
   };
 }

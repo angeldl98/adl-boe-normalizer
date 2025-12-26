@@ -8,22 +8,18 @@ export type RawRecord = {
 };
 
 export type NormalizedRecord = {
-  raw_id: number;
-  boe_uid: string | null;
-  titulo: string | null;
+  url: string;
+  identificador: string;
+  tipo_subasta: string;
   estado: string | null;
-  fecha_publicacion: string | null;
-  fecha_conclusion: string | null;
-  expediente: string | null;
+  estado_detalle: string | null;
+  valor_subasta: string | null;
+  tasacion: string | null;
+  importe_deposito: string | null;
   organismo: string | null;
   provincia: string | null;
   municipio: string | null;
-  direccion: string | null;
-  importe_base: string | null;
-  importe_subasta: string | null;
-  tipo_subasta: string | null;
-  estado_normalizado: EstadoNormalizado | null;
-  url_detalle: string | null;
+  checksum: string;
 };
 
 export type NormalizationRun = {
