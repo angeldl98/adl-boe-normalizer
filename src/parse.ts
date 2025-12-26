@@ -45,6 +45,17 @@ function extractIsoDate(label: "inicio" | "conclusion", html: string): string | 
   return extractRegex(html, regex);
 }
 
+function extractDateFallback(label: "inicio" | "conclusion", html: string): string | null {
+  const regex =
+    label === "inicio"
+      ? /Fecha\s+de\s+inicio[^<\n\r]*?([0-9]{2})-([0-9]{2})-([0-9]{4})\s+([0-9]{2}:[0-9]{2}:[0-9]{2})/i
+      : /Fecha\s+de\s+(?:conclus[ií]on|conclusi[oó]n)[^<\n\r]*?([0-9]{2})-([0-9]{2})-([0-9]{4})\s+([0-9]{2}:[0-9]{2}:[0-9]{2})/i;
+  const m = html.match(regex);
+  if (!m) return null;
+  const [, dd, mm, yyyy, time] = m;
+  return `${yyyy}-${mm}-${dd}T${time}+01:00`;
+}
+
 function normalizeEstado(estado: string | null): EstadoNormalizado | null {
   if (!estado) return null;
   const low = estado.toLowerCase();
@@ -63,14 +74,15 @@ export function parseRawToNormalized(raw: RawRecord): NormalizedRecord {
   const valorSubasta = normalizeAmount(
     extractRegex(html, /Importe\s+Subasta:\s*([\d\.\,]+)/i) ||
       extractRegex(html, /Importe\s+Base:\s*([\d\.\,]+)/i) ||
-      extractRegex(html, /Tipo\s+de\s+subasta[^<\n\r]*?([\d\.\,]+)\s*€/i)
+      extractRegex(html, /Tipo\s+de\s+subasta[^<\n\r]*?([\d\.\,]+)\s*€/i) ||
+      extractRegex(html, /Valor\s+subasta:\s*([\d\.\,]+)/i)
   );
   const tipoSubasta = extractRegex(html, /Tipo\s+de\s+subasta:\s*([^<\n\r]+)/i) || "desconocido";
   const organismo = extractRegex(html, /(Órgano\s+Gestor|Organo\s+Gestor):\s*([^<\n\r]+)/i) || extractRegex(html, /Organismo:\s*([^<\n\r]+)/i);
   const provincia = extractRegex(html, /Provincia:\s*([^<\n\r]+)/i);
   const municipio = extractRegex(html, /Municipio:\s*([^<\n\r]+)/i);
-  const fechaInicioIso = extractIsoDate("inicio", html);
-  const fechaFinIso = extractIsoDate("conclusion", html);
+  const fechaInicioIso = extractIsoDate("inicio", html) || extractDateFallback("inicio", html);
+  const fechaFinIso = extractIsoDate("conclusion", html) || extractDateFallback("conclusion", html);
 
   return {
     url: canonicalUrl,
