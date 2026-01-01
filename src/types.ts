@@ -25,6 +25,8 @@ export type CoverageCounters = {
   total: number;
   inserted: number;
   updated: number;
+  degraded: number;
+  recovered: number;
   fields: {
     auction_type: number;
     issuing_authority: number;

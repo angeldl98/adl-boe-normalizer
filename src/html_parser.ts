@@ -26,8 +26,21 @@ function extractText(patterns: RegExp[], html: string): string | null {
 
 function normalizeMoney(value: string | null): string | null {
   if (!value) return null;
-  const cleaned = value.replace(/\./g, "").replace(/,/g, ".").replace(/[^\d.-]/g, "").trim();
-  return cleaned || null;
+  // Remove spaces, keep digits, dots, commas, minus
+  const trimmed = value.replace(/\s+/g, "");
+  // Drop thousand separators (dot) when followed by exactly 3 digits
+  const noThousands = trimmed.replace(/\.(?=\d{3}(\D|$))/g, "");
+  // Normalize decimal comma to dot
+  const normalized = noThousands.replace(/,/g, ".");
+  const cleaned = normalized.replace(/[^\d.-]/g, "").trim();
+  if (!cleaned) return null;
+  // Ensure only one decimal dot (keep first)
+  const parts = cleaned.split(".");
+  if (parts.length > 2) {
+    const [first, ...rest] = parts;
+    return `${first}.${rest.join("")}`;
+  }
+  return cleaned;
 }
 
 function normalizeAuctionType(raw: string | null): string | null {
@@ -58,14 +71,26 @@ function extractIsoDate(html: string, label: "inicio" | "conclusion"): string | 
   const iso = extractText([isoPattern], html);
   if (iso) return iso;
 
-  const fallbackPattern =
+  const fallbackPatterns =
     label === "inicio"
-      ? /Fecha\s+de\s+inicio[\s\S]{0,160}?([0-9]{2})-([0-9]{2})-([0-9]{4})\s+([0-9]{2}:[0-9]{2}:[0-9]{2})/i
-      : /Fecha\s+de\s+(?:conclusi[oó]n|conclusión)[\s\S]{0,160}?([0-9]{2})-([0-9]{2})-([0-9]{4})\s+([0-9]{2}:[0-9]{2}:[0-9]{2})/i;
-  const m = html.match(fallbackPattern);
-  if (m) {
-    const [, dd, mm, yyyy, time] = m;
-    return `${yyyy}-${mm}-${dd}T${time}+01:00`;
+      ? [
+          /Fecha\s+de\s+inicio[\s\S]{0,160}?([0-9]{2})[-\/]([0-9]{2})[-\/]([0-9]{4})\s+([0-9]{2}:[0-9]{2}:[0-9]{2})/i,
+          /Fecha\s+de\s+inicio[\s\S]{0,160}?([0-9]{2})[-\/]([0-9]{2})[-\/]([0-9]{4})/i
+        ]
+      : [
+          /Fecha\s+de\s+(?:conclusi[oó]n|conclusión)[\s\S]{0,160}?([0-9]{2})[-\/]([0-9]{2})[-\/]([0-9]{4})\s+([0-9]{2}:[0-9]{2}:[0-9]{2})/i,
+          /Fecha\s+de\s+(?:conclusi[oó]n|conclusión)[\s\S]{0,160}?([0-9]{2})[-\/]([0-9]{2})[-\/]([0-9]{4})/i
+        ];
+
+  for (const p of fallbackPatterns) {
+    const m = html.match(p);
+    if (m) {
+      const [, dd, mm, yyyy, time] = m;
+      if (time) {
+        return `${yyyy}-${mm}-${dd}T${time}+01:00`;
+      }
+      return `${yyyy}-${mm}-${dd}T00:00:00+01:00`;
+    }
   }
   return null;
 }
