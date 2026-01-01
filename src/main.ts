@@ -40,7 +40,7 @@ async function main() {
     const parsed = parseHtmlRecord(row);
     const result = await upsertNormalizedHtml(parsed);
     if (result === "inserted") coverage.inserted += 1;
-    else coverage.updated += 1;
+    else if (result === "updated") coverage.updated += 1;
 
     if (parsed.auction_type) coverage.fields.auction_type += 1;
     if (parsed.issuing_authority) coverage.fields.issuing_authority += 1;
