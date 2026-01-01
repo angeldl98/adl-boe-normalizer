@@ -62,6 +62,7 @@ async function main() {
   const startedAt = new Date().toISOString();
   let processed = 0;
   let errors = 0;
+  let status: "ok" | "success_no_changes" | "error" = "ok";
 
   const client = await getClient();
   await client.query("BEGIN");
@@ -98,12 +99,14 @@ async function main() {
       await upsertNormalized(normalized);
       processed += 1;
     }
-    await recordRunEnd(runId, "ok", new Date().toISOString(), processed, errors);
+    status = processed === 0 ? "success_no_changes" : "ok";
+    await recordRunEnd(runId, status, new Date().toISOString(), processed, errors);
     await client.query("COMMIT");
   } catch (err: any) {
     await client.query("ROLLBACK TO SAVEPOINT after_start");
     processed = 0;
     errors = 1;
+    status = "error";
     await recordRunEnd(runId, "error", new Date().toISOString(), processed, errors);
     await client.query("COMMIT");
     console.error(err);
